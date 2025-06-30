@@ -9,12 +9,29 @@ const qrcode = require('qrcode-terminal');
 const admin = require("firebase-admin");
 
 // ✅ Load your Firebase Admin service account JSON key
-const serviceAccount = require("./firebase-key.json");
+// const serviceAccount = require("./firebase-key.json");
 
-// ✅ Initialize Firebase Admin SDK
+
+const fs = require("fs");
+
+let firebaseConfig;
+
+// First try loading from environment variable (Render)
+if (process.env.FIREBASE_KEY) {
+    firebaseConfig = JSON.parse(process.env.FIREBASE_KEY);
+} else {
+    // Fallback to local JSON file (for development)
+    firebaseConfig = JSON.parse(fs.readFileSync("./firebase-key.json", "utf8"));
+}
+
 admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert(firebaseConfig)
 });
+
+// // ✅ Initialize Firebase Admin SDK
+// admin.initializeApp({
+//     credential: admin.credential.cert(serviceAccount)
+// });
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
@@ -51,8 +68,33 @@ async function startBot() {
         const text = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
         const from = msg.key.remoteJid;
 
-        if (text.toLowerCase() === 'ping') {
-            await sock.sendMessage(from, { text: 'pong!' });
+        const lowerText = text.toLowerCase();
+
+        // Keywords that indicate slots are available
+        const positiveKeywords = [
+            "slot available",
+            "slots available",
+            "slot is available",
+            "slots are available",
+            "slots are open",
+            "got slot",
+            "slot opened",
+            "slot open",
+            "slots released",
+            "slot release",
+            "slots came",
+            "slot dropped",
+            "slots drop",
+            "slot got",
+            "slot is available",
+            "booked slot",
+        ];
+
+        // Check if message includes any positive keyword
+        const isSlotAlert = positiveKeywords.some(keyword => lowerText.includes(keyword));
+
+        if (isSlotAlert) {
+            // await sock.sendMessage(from, { text: 'pong!' });
 
             // ✅ Prepare push notification payload with both notification and data
             const message = {
