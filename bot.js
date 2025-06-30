@@ -3,38 +3,12 @@ const {
     DisconnectReason,
     useMultiFileAuthState
 } = require('@whiskeysockets/baileys');
-
-require('dotenv').config();
-
-
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode-terminal');
-const admin = require("firebase-admin");
+const admin = require('./firebase');
+const { isSlotAlertMessage } = require('./slotDetector');
 
-// ✅ Load your Firebase Admin service account JSON key
-// const serviceAccount = require("./firebase-key.json");
-
-
-const fs = require("fs");
-
-let firebaseConfig;
-
-// First try loading from environment variable (Render)
-if (process.env.FIREBASE_KEY) {
-    firebaseConfig = JSON.parse(process.env.FIREBASE_KEY);
-} else {
-    // Fallback to local JSON file (for development)
-    firebaseConfig = JSON.parse(fs.readFileSync("./firebase-key.json", "utf8"));
-}
-
-admin.initializeApp({
-    credential: admin.credential.cert(firebaseConfig)
-});
-
-// // ✅ Initialize Firebase Admin SDK
-// admin.initializeApp({
-//     credential: admin.credential.cert(serviceAccount)
-// });
+require('dotenv').config();
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
@@ -71,48 +45,15 @@ async function startBot() {
         const text = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
         const from = msg.key.remoteJid;
 
-        const lowerText = text.toLowerCase();
-
-        // Keywords that indicate slots are available
-        const positiveKeywords = [
-            "slot available",
-            "slots available",
-            "slot is available",
-            "slots are available",
-            "slots are open",
-            "got slot",
-            "slot opened",
-            "slot open",
-            "slots released",
-            "slot release",
-            "slots came",
-            "slot dropped",
-            "slots drop",
-            "slot got",
-            "slot is available",
-            "booked slot",
-        ];
-
-        // Check if message includes any positive keyword
-        const isSlotAlert = positiveKeywords.some(keyword => lowerText.includes(keyword));
-
-        if (isSlotAlert) {
-            // await sock.sendMessage(from, { text: 'pong!' });
-
-            // ✅ Prepare push notification payload with both notification and data
+        if (isSlotAlertMessage(text)) {
             const message = {
-                token: process.env.FCM_TOKEN, // ✅ Replace with your real FCM device token
-
+                token: process.env.FCM_TOKEN,
                 data: {
                     title: 'Visa Slot Found!',
                     body: 'Login now and book fast!',
                     type: 'slot_alert'
                 },
-
-                android: {
-                    priority: "high"
-                },
-
+                android: { priority: "high" },
                 apns: {
                     payload: {
                         aps: {
@@ -132,16 +73,4 @@ async function startBot() {
     });
 }
 
-startBot();
-
-
-// ✅ Add Express to keep Render Web Service alive
-const express = require('express');
-const app = express();
-
-app.get('/', (_, res) => res.send('✅ WhatsApp bot is running!'));
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`🟢 Express server running on port ${PORT}`);
-});
+module.exports = startBot;
