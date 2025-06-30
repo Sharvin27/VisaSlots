@@ -4,6 +4,9 @@ const {
     useMultiFileAuthState
 } = require('@whiskeysockets/baileys');
 
+require('dotenv').config();
+
+
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode-terminal');
 const admin = require("firebase-admin");
@@ -98,7 +101,7 @@ async function startBot() {
 
             // ✅ Prepare push notification payload with both notification and data
             const message = {
-                token: 'eAvHJ5opTkqKFm2Xth2mey:APA91bGc4YUo6NdhkXWL8cL8nFz8UtUbuPcEEUEedrEhNSy6klilO14voV3VwOctQ7M7h7TzH9kgGgVFOD3gPD_OTp8QM4R2Q9SXLXuEctyvnhICGX4dPko', // ✅ Replace with your real FCM device token
+                token: process.env.FCM_TOKEN, // ✅ Replace with your real FCM device token
 
                 data: {
                     title: 'Visa Slot Found!',
@@ -130,3 +133,15 @@ async function startBot() {
 }
 
 startBot();
+
+
+// ✅ Add Express to keep Render Web Service alive
+const express = require('express');
+const app = express();
+
+app.get('/', (_, res) => res.send('✅ WhatsApp bot is running!'));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🟢 Express server running on port ${PORT}`);
+});
