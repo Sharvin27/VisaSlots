@@ -1,13 +1,19 @@
 {
   "name": "whatsappbot",
   "version": "1.0.0",
-  "description": "",
+  "description": "WhatsApp bot using Baileys and Firebase",
   "main": "bot.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node bot.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "baileys",
+    "firebase",
+    "puppeteer"
+  ],
+  "author": "Your Name",
   "license": "ISC",
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.18",
