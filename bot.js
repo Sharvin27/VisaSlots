@@ -50,7 +50,7 @@ async function startBot() {
                 token: process.env.FCM_TOKEN,
                 data: {
                     title: 'Visa Slot Found!',
-                    body: 'Login now and book fast!',
+                    body: text,
                     type: 'slot_alert'
                 },
                 android: { priority: "high" },
