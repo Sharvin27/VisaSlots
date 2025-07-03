@@ -3,6 +3,8 @@ const { sendSlotAlertNotification } = require("./sendNotification");
 
 let previousSnapshot = [];
 let page;
+let browser;
+let monitorInterval;
 
 async function fetchVisaSlots() {
     await page.reload({ waitUntil: "networkidle2", timeout: 60000 });
@@ -48,11 +50,31 @@ async function monitorVisaSlots() {
         previousSnapshot = currentSnapshot;
     } catch (err) {
         console.error("❌ Error checking visa slots:", err.message);
+        // If error is likely due to memory, restart browser
+        if (browser) {
+            try { await browser.close(); } catch {}
+            await startSlotTracker(true); // restart
+        }
     }
 }
 
-async function startSlotTracker() {
-    const browser = await puppeteer.launch({ headless: "new" });
+async function startSlotTracker(isRestart = false) {
+    if (isRestart && browser) {
+        try { await browser.close(); } catch {}
+    }
+    // Launch Puppeteer with memory-optimized flags
+    browser = await puppeteer.launch({
+        headless: "new",
+        args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-accelerated-2d-canvas",
+            "--no-zygote",
+            "--single-process",
+            "--disable-gpu"
+        ]
+    });
     page = await browser.newPage();
 
     await page.goto("https://checkvisaslots.com/latest-us-visa-availability.html", {
@@ -61,7 +83,15 @@ async function startSlotTracker() {
     });
 
     await monitorVisaSlots(); // initial run
-    setInterval(monitorVisaSlots, 5 * 60 * 1000); // every 5 minutes
+    if (monitorInterval) clearInterval(monitorInterval);
+    monitorInterval = setInterval(async () => {
+        // Periodically restart browser to free memory
+        if (browser) {
+            try { await browser.close(); } catch {}
+        }
+        await startSlotTracker(true);
+    }, 60 * 60 * 1000); // restart every 1 hour
+    setInterval(monitorVisaSlots, 10 * 60 * 1000); // check every 10 minutes
 }
 
 module.exports = startSlotTracker;
