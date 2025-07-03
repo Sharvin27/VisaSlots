@@ -1,10 +1,12 @@
 require('dotenv').config();
 
 const startBot = require('./bot');
+const startSlotTracker = require('./checkvisaslots');
 const startServer = require('./server');
 
 startBot();
 startServer();
+startSlotTracker();
 
 // --- Self-ping logic to keep Render server awake ---
 function pingSelf() {
